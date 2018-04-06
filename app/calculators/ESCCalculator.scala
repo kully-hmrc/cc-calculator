@@ -109,7 +109,10 @@ trait ESCCalculatorHelpers extends ESCConfig with CCCalculatorHelper with Messag
 
     //Need refactoring
     if(isScottishESCTaxYearConfig){
-        relevantEarnings match {
+      println("....... Scottish determineMaximumIncomeReliefPost2011BasedOnRelevantEarnings............")
+      println(".......  Relevant Earnings ......" + relevantEarnings)
+
+      relevantEarnings match {
           case amount if amount <= niThreshold => //20% band, if you earn less than PA, you could still buy only that amount of vouchers
             monthlyAmountToPeriod(config.post2011MaxExemptionMonthlyBasic, calcPeriod)
           case amount if amount > niThreshold && amount <= higherRateCeiling => //40% band
@@ -118,7 +121,9 @@ trait ESCCalculatorHelpers extends ESCConfig with CCCalculatorHelper with Messag
             monthlyAmountToPeriod (config.post2011MaxExemptionMonthlyAdditional, calcPeriod)
         }
     } else {
-        relevantEarnings match {
+      println("....... UK determineMaximumIncomeReliefPost2011BasedOnRelevantEarnings............")
+
+      relevantEarnings match {
           case amount if amount <= basicRateCeiling => //20% band, if you earn less than PA, you could still buy only that amount of vouchers
             monthlyAmountToPeriod (config.post2011MaxExemptionMonthlyBasic, calcPeriod)
           case amount if amount > basicRateCeiling && amount <= higherRateCeiling => //40% band
@@ -292,14 +297,24 @@ trait ESCCalculatorTax extends ESCCalculatorHelpers {
 
     val higherRateCeilingPerPeriod : BigDecimal = roundToPound(annualAmountToPeriod(config.taxHigherBandUpperLimit, calcPeriod))
 
-
+  println("..........allocateAmountToTaxBandsForScotland.........")
     if (taxablePay <= personalAllowancePerPeriod) {
+      println(".... PA zero rate.........")
+      println ("....taxablePay........"+taxablePay)
+      println ("....personalAllowancePerPeriod........"+personalAllowancePerPeriod)
+
       CalculationTaxBands(zeroRateBand = taxablePay)
 
     } else if (taxablePay > personalAllowancePerPeriod && taxablePay <= starterRateCeiling) {
+      println(".... starter rate.........")
+      println ("....taxablePay........"+taxablePay)
+      println ("....personalAllowancePerPeriod........"+personalAllowancePerPeriod)
       CalculationTaxBands(zeroRateBand = personalAllowancePerPeriod, starterRateBand = taxablePay - personalAllowancePerPeriod)
 
     } else if (taxablePay > starterRateCeiling && taxablePay <= basicRateCeiling){
+      println(".... basic rate.........")
+      println ("....taxablePay........"+taxablePay)
+      println ("....personalAllowancePerPeriod........"+personalAllowancePerPeriod)
 
       CalculationTaxBands(
         zeroRateBand = personalAllowancePerPeriod,
@@ -307,6 +322,9 @@ trait ESCCalculatorTax extends ESCCalculatorHelpers {
         basicRateBand = taxablePay - starterRateCeiling)
 
     } else if (taxablePay > basicRateCeiling && taxablePay <= intermediateRateCeiling) {
+      println(".... intermediate rate.........")
+      println ("....taxablePay........"+taxablePay)
+      println ("....personalAllowancePerPeriod........"+personalAllowancePerPeriod)
 
       CalculationTaxBands(
         zeroRateBand = personalAllowancePerPeriod,
@@ -315,6 +333,9 @@ trait ESCCalculatorTax extends ESCCalculatorHelpers {
         intermediateRateBand = taxablePay - basicRateCeiling
       )
     } else if (taxablePay > intermediateRateCeiling && taxablePay <= higherRateCeilingPerPeriod) {
+      println(".... higher rate.........")
+      println ("....taxablePay........"+taxablePay)
+      println ("....personalAllowancePerPeriod........"+personalAllowancePerPeriod)
 
       CalculationTaxBands(
         zeroRateBand = personalAllowancePerPeriod,
@@ -325,6 +346,10 @@ trait ESCCalculatorTax extends ESCCalculatorHelpers {
       )
 
     } else {
+      println(".... additional rate.........")
+      println ("....taxablePay........"+taxablePay)
+      println ("....personalAllowancePerPeriod........"+personalAllowancePerPeriod)
+
       CalculationTaxBands(
         zeroRateBand = personalAllowancePerPeriod,
         starterRateBand = taxablePay - personalAllowancePerPeriod,
@@ -379,7 +404,10 @@ trait ESCCalculatorTax extends ESCCalculatorHelpers {
     val intermediateRatePercent: BigDecimal = config.taxIntermediateRate
     val higherRatePercent : BigDecimal = config.taxHigherRate
     val additionalRatePercent : BigDecimal = config.taxAdditionalRate
-
+    println("......... calculate tax per band......" + "zerorate " + taxableAmountPerBand.zeroRateBand * (personalAllowancePercent/100),
+        "startRate " + taxableAmountPerBand.starterRateBand * (starterRatePercent / 100),
+        "basicrate " + taxableAmountPerBand.basicRateBand * (basicRatePercent / 100)
+   )
     CalculationTaxBands (
       zeroRateBand =  taxableAmountPerBand.zeroRateBand * (personalAllowancePercent/100),
       starterRateBand = taxableAmountPerBand.starterRateBand * (starterRatePercent / 100),
@@ -660,9 +688,11 @@ trait ESCCalculator extends ESCCalculatorTax with ESCCalculatorNi {
       taxCode,
       config
     )
+    println(".......max relief amount ............" + maximumReliefAmount)
+    println(".......annual amount to period  ............" + annualAmountToPeriod(relevantEarningsForTax, Periods.Monthly))
+
     (maximumReliefAmount, annualAmountToPeriod(relevantEarningsForTax, Periods.Monthly), annualAmountToPeriod(relevantEarningsForNI, Periods.Monthly))
   }
-
   private def accumulateAmount(qualified: Boolean, eligibleMonths: Int, amount: BigDecimal): BigDecimal = {
     if(qualified) {
       eligibleMonths * amount
@@ -780,6 +810,7 @@ trait ESCCalculator extends ESCCalculatorTax with ESCCalculatorNi {
           )
         }
       )
+    println("............calculatedTaxYears..........." + calculatedTaxYears)
     Future{
       ESCCalculatorOutput(
         from = eligibility.taxYears.head.from,
